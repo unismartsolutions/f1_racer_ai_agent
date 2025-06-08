@@ -50,17 +50,65 @@ docker run -it f1-racer-agent
 pip install -r requirements.txt
 ```
 
-2. **Download required NLP models**:
-```bash
-python -m spacy download en_core_web_sm
-python -c "import nltk; nltk.download('vader_lexicon'); nltk.download('punkt'); nltk.download('stopwords')"
-```
+2. **Download required NLP models and data**:
+
+   **Option A: Automated Setup (Recommended)**
+   ```bash
+   python setup_nltk.py
+   python -m spacy download en_core_web_sm
+   ```
+
+   **Option B: Manual Setup**
+   ```bash
+   # Download spaCy model
+   python -m spacy download en_core_web_sm
+   
+   # Download NLTK data manually
+   python -c "
+   import nltk
+   resources = ['punkt', 'punkt_tab', 'vader_lexicon', 'stopwords', 'averaged_perceptron_tagger', 'averaged_perceptron_tagger_eng', 'maxent_ne_chunker', 'words']
+   for resource in resources:
+       try:
+           nltk.download(resource, quiet=True)
+           print(f'✅ Downloaded {resource}')
+       except:
+           print(f'⚠️  Could not download {resource}')
+   "
+   ```
 
 3. **Run the agent**:
 ```bash
 python run_agent.py  # Interactive mode
 python f1_agent.py   # Demo with NLP features
 ```
+
+### 🔧 Troubleshooting NLTK Issues
+
+If you encounter NLTK errors like `punkt_tab not found`, try these solutions:
+
+**Solution 1: Use the setup script**
+```bash
+python setup_nltk.py
+```
+
+**Solution 2: Manual NLTK download**
+```bash
+python -c "import nltk; nltk.download('punkt_tab')"
+python -c "import nltk; nltk.download('vader_lexicon')"
+python -c "import nltk; nltk.download('stopwords')"
+```
+
+**Solution 3: Download all NLTK data**
+```bash
+python -c "import nltk; nltk.download('all')"
+```
+
+**Solution 4: Force download popular packages**
+```bash
+python -m nltk.downloader popular
+```
+
+**Note**: The agent includes comprehensive fallback mechanisms, so it will work even if some NLTK resources fail to download, though with reduced NLP capabilities.
 
 ## 📱 Usage Examples
 
