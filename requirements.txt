@@ -1,27 +1,9 @@
-# Core dependencies for F1 Racer AI Agent with NLP capabilities
-
-# Essential NLP libraries as encouraged in requirements
 nltk>=3.8.1
 spacy>=3.4.0
 transformers>=4.21.0
 torch>=1.12.0
 tokenizers>=0.13.0
-
-# Text processing and analysis
 textblob>=0.17.0
 numpy>=1.21.0
-
-# Optional: For enhanced language processing
-scikit-learn>=1.1.0
-
-# For development and testing
 pytest>=7.0.0
 
-# For future web interface (optional)
-# flask>=2.2.0
-# fastapi>=0.95.0
-# uvicorn>=0.20.0
-
-# Development tools (optional)
-# black>=22.0.0
-# flake8>=5.0.0

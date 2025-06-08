@@ -19,59 +19,34 @@ import torch
 from textblob import TextBlob
 import numpy as np
 
-# # Download required NLTK data
-# def download_nltk_data():
-#     """Download NLTK data with version compatibility"""
-    
-#     nltk_resources = [
-#         ('tokenizers/punkt', 'punkt'),
-#         ('tokenizers/punkt_tab', 'punkt_tab'),
-#         ('vader_lexicon', 'vader_lexicon'),
-#         ('corpora/stopwords', 'stopwords'),
-#         ('taggers/averaged_perceptron_tagger', 'averaged_perceptron_tagger'),
-#         ('taggers/averaged_perceptron_tagger_eng', 'averaged_perceptron_tagger_eng'),
-#         ('chunkers/maxent_ne_chunker', 'maxent_ne_chunker'),
-#         ('corpora/words', 'words')
-#     ]
-    
-#     for resource_path, resource_name in nltk_resources:
-#         try:
-#             nltk.data.find(resource_path)
-#         except LookupError:
-#             try:
-#                 nltk.download(resource_name, quiet=True)
-#             except Exception:
-#                 continue
-
-# download_nltk_data()
+# Human-like comments for each Enum class and its members
 
 class RaceStage(Enum):
-    """Different race weekend stages"""
-    PRACTICE = "practice"
-    QUALIFYING = "qualifying"
-    RACE = "race"
-    POST_RACE = "post_race"
+    """Represents the main stages of a Formula 1 race weekend."""
+    PRACTICE = "practice"        # Practice sessions where teams test setups and gather data
+    QUALIFYING = "qualifying"    # Qualifying session to determine starting grid positions
+    RACE = "race"                # The main race event
+    POST_RACE = "post_race"      # Activities and analysis after the race has finished
 
 class SessionType(Enum):
-    """Specific session types"""
-    FP1 = "FP1"
-    FP2 = "FP2"
-    FP3 = "FP3"
-    Q1 = "Q1"
-    Q2 = "Q2"
-    Q3 = "Q3"
-    RACE = "Race"
-    SPRINT = "Sprint"
+    """Enumerates the specific session types during a race weekend."""
+    FP1 = "FP1"                  # Free Practice 1
+    FP2 = "FP2"                  # Free Practice 2
+    FP3 = "FP3"                  # Free Practice 3
+    Q1 = "Q1"                    # Qualifying session 1
+    Q2 = "Q2"                    # Qualifying session 2
+    Q3 = "Q3"                    # Qualifying session 3
+    RACE = "Race"                # The main race session
 
 class RaceResult(Enum):
-    """Race results"""
-    WIN = "win"
-    PODIUM = "podium"
-    POINTS = "points"
-    DNF = "dnf"
-    CRASH = "crash"
-    MECHANICAL = "mechanical"
-    DISAPPOINTING = "disappointing"
+    """Possible outcomes or results for a driver in a race."""
+    WIN = "win"                  # Finished in first place
+    PODIUM = "podium"            # Finished in the top three
+    POINTS = "points"            # Finished in a points-scoring position
+    DNF = "dnf"                  # Did not finish the race
+    CRASH = "crash"              # Retired due to a crash
+    MECHANICAL = "mechanical"    # Retired due to a mechanical issue
+    DISAPPOINTING = "disappointing"  # Finished with a disappointing result
 
 @dataclass
 class RaceContext:
@@ -87,7 +62,7 @@ class RaceContext:
     mood: str
 
 class NLPProcessor:
-    """NLP processor using NLTK, spaCy, and Transformers"""
+    """NLP processor using NLTK, spacy, and transformers"""
     
     def __init__(self):
         self.nltk_ready = False
@@ -309,7 +284,8 @@ class F1RacerAgent:
     
     def update_context(self, stage: RaceStage, session_type: Optional[SessionType] = None,
                       circuit_name: str = None, race_name: str = None,
-                      last_result: Optional[RaceResult] = None, position: Optional[int] = None):
+                      last_result: Optional[RaceResult] = None, position: Optional[int] = None,
+                      mood: str = None):
         """Update the agent's contextual awareness"""
         
         previous_mood = self.context.mood
@@ -324,7 +300,11 @@ class F1RacerAgent:
         self.context.last_result = last_result
         self.context.position = position
         
-        self._analyze_and_update_mood()
+        # Only analyze mood if not explicitly provided
+        if mood:
+            self.context.mood = mood
+        else:
+            self._analyze_and_update_mood()
         
         context_change = {
             "timestamp": datetime.now(),
@@ -831,11 +811,11 @@ class F1RacerAgent:
         sentiment = self.nlp_processor.analyze_sentiment(post_content)
         
         if sentiment['compound'] > 0.5:
-            reactions = ["❤️ Loved", "🏁 Absolutely loved", "💪 Fully supported", "🔥 This is fire"]
+            reactions = ["❤️ Loved", "❤️❤️❤️ Absolutely loved", "💪 Fully supported", "🔥 This is fire"]
         elif sentiment['compound'] > 0.1:
             reactions = ["👍 Liked", "🙌 Supported", "💯 This", "✨ Quality content"]
         else:
-            reactions = ["👍 Acknowledged", "🤝 Respect", "💙 Seen", "🏁 Noted"]
+            reactions = ["👍 Acknowledged", "🤝 Respect", "💙 Seen", "👍 Noted"]
         
         action = random.choice(reactions)
         preview = post_content[:50] + "..." if len(post_content) > 50 else post_content
@@ -1092,10 +1072,8 @@ if __name__ == "__main__":
         print()
     
     # Test with disappointment context for support comments
-    print("\n" + "-" * 60)
     print("Testing negative context (DNF) with supportive comments:")
-    print("-" * 60)
-    
+        
     agent.update_context(
         stage=RaceStage.POST_RACE,
         last_result=RaceResult.DNF,
@@ -1117,11 +1095,3 @@ if __name__ == "__main__":
         reply = agent.reply_to_comment(comment)
         print(f"Agent: {reply}")
         print()
-    
-    print("=" * 60)
-    print("✅ Comprehensive reply system tested!")
-    print("✅ Handles positive, negative, neutral, and questions!")
-    print("✅ Professional responses to all comment types!")
-    print("✅ Contextual emoji usage!")
-    print("✅ Agent meets all specified requirements!")
-    print("=" * 60)

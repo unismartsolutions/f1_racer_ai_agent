@@ -1,6 +1,8 @@
 
 # 1. Create a virtual environment
-python -m venv .venv
+py -m venv .venv
+# Use the below if you have not aliased python on you system PATH
+#python -m venv .venv
 
 # 2. Add the VENV to .gignore to avoid committing it
 echo "/.venv" >> .gitignore

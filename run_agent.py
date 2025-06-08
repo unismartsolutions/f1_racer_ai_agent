@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-Interactive F1 Racer AI Agent Runner
-Allows users to configure and interact with the F1 agent in various scenarios
-"""
-
 import os
 import sys
 import warnings
@@ -14,6 +8,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 try:
     from f1_agent import F1RacerAgent, RaceStage, SessionType, RaceResult
 except ImportError as e:
+    # Include print statements to help diagnose import issues - can happen when working with nltk or spacey models 
     print(f"Error importing F1 agent: {e}")
     print("Make sure all dependencies are installed:")
     print("   pip install nltk spacy transformers torch textblob")
@@ -21,7 +16,7 @@ except ImportError as e:
     sys.exit(1)
 
 class F1AgentInterface:
-    """Interactive interface for the F1 Racer AI Agent"""
+    """Class for the Interactive interface of the F1 Racer Agent"""
     
     def __init__(self):
         self.agent = None
@@ -29,28 +24,28 @@ class F1AgentInterface:
         self.setup_initial_context()
     
     def setup_agent(self):
-        """Setup agent with user configuration"""
+        """CLI Setup agent with user-specifeid configuration"""
         print("F1 Racer AI Agent")
         print("=" * 30)
         
-        racer_name = input("Enter racer name (default: Alex Driver): ").strip()
+        racer_name = input("Enter racer name (default: Lightening Mcqueen): ").strip()
         if not racer_name:
-            racer_name = "Alex Driver"
+            racer_name = "Lightening Mcqueen"
             
-        team_name = input("Enter team name (default: Racing Team): ").strip()
+        team_name = input("Enter team name (default: Rusteez): ").strip()
         if not team_name:
-            team_name = "Racing Team"
+            team_name = "Rusteez"
         
         self.agent = F1RacerAgent(racer_name, team_name)
-        print(f"\nAgent created: {racer_name} from {team_name}")
+        print(f"\nAgent successfully created: {racer_name} from team {team_name}")
     
     def setup_initial_context(self):
-        """Setup initial context for the agent"""
+        """Congiuyre the Agent context"""
         print("\n" + "=" * 30)
-        print("Initial Context Setup")
+        print("Context Setup")
         print("=" * 30)
         
-        # Current race weekend stage
+        # Provide the user with options to set the current race context 
         print("\nSelect current race weekend stage:")
         stages = {
             "1": RaceStage.PRACTICE,
@@ -63,38 +58,40 @@ class F1AgentInterface:
             print(f"{key}. {stage.value.title()}")
         
         stage_choice = input("Enter choice (1-4, default: 1): ").strip()
+        # Configure default stage to Practice if user leaves blank
         if not stage_choice:
             stage_choice = "1"
         stage = stages.get(stage_choice, RaceStage.PRACTICE)
         
-        # Session type
+        # Provide the user with options to set the session type if applicable. For this assessment I am just using basic options but in real world examples this list would be subsetted based on the race context selected
         session_type = None
         if stage in [RaceStage.PRACTICE, RaceStage.QUALIFYING]:
             print(f"\nSelect session type for {stage.value}:")
             sessions = {
                 "1": SessionType.FP1, "2": SessionType.FP2, "3": SessionType.FP3,
                 "4": SessionType.Q1, "5": SessionType.Q2, "6": SessionType.Q3,
-                "7": SessionType.RACE, "8": SessionType.SPRINT
+                "7": SessionType.RACE
             }
             
             for key, session in sessions.items():
                 print(f"{key}. {session.value}")
             
-            session_choice = input("Enter choice (1-8, default: 1): ").strip()
+            session_choice = input("Enter choice (1-7, default: 1): ").strip()
+           # Default to free pactice 1 if user leaves blank
             if not session_choice:
                 session_choice = "1" 
             session_type = sessions.get(session_choice, SessionType.FP1)
         
         # Circuit and race
-        circuit = input("\nEnter circuit name (default: Silverstone): ").strip()
+        circuit = input("\nEnter circuit name (default: Nurburgring): ").strip()
         if not circuit:
-            circuit = "Silverstone"
+            circuit = "Nurburgring"
             
-        race_name = input("Enter race name (default: British Grand Prix): ").strip()
+        race_name = input("Enter race name (default: German Grand Prix): ").strip()
         if not race_name:
-            race_name = "British Grand Prix"
+            race_name = "German Grand Prix"
         
-        # Recent result and position
+        # Recent result and position - Set to None initially - can be updates by user if required later
         last_result = None
         position = None
         
@@ -120,14 +117,30 @@ class F1AgentInterface:
                 except ValueError:
                     position = 5
         
-        # Apply context to agent
+        # Add mood selection
+        print("\nSelect agent mood:")
+        moods = {
+            "1": "excited", "2": "confident", "3": "disappointed", 
+            "4": "focused", "5": "neutral", "6": "frustrated"
+        }
+        
+        for key, mood in moods.items():
+            print(f"{key}. {mood.title()}")
+        
+        mood_choice = input("Enter choice (1-6, default: 5): ").strip()
+        if not mood_choice:
+            mood_choice = "5"
+        mood = moods.get(mood_choice, "neutral")
+        
+        # Apply the user provided context to agent
         self.agent.update_context(
             stage=stage,
             session_type=session_type,
             circuit_name=circuit,
             race_name=race_name,
             last_result=last_result,
-            position=position
+            position=position,
+            mood=mood
         )
         
         print(f"\nContext set: {stage.value} at {circuit}")
@@ -135,9 +148,11 @@ class F1AgentInterface:
             print(f"Session: {session_type.value}")
         if last_result:
             print(f"Recent result: {last_result.value}")
+        print(f"Mood: {mood}")
         
-        print("\nAgent is ready!")
+        print("\nAgent is ready to interact with.")
     
+    # Provide the user with a menu of options via CLI
     def display_menu(self):
         """Display the main menu options"""
         print("\nF1 Agent Actions:")
@@ -152,10 +167,12 @@ class F1AgentInterface:
         print("9. Quick Race Weekend Simulation")
         print("0. Exit")
     
+    # Get the user input
     def get_user_choice(self) -> str:
         """Get user menu choice"""
         return input("\nEnter your choice (0-9): ").strip()
     
+    # Handle selection for status creation
     def generate_status_post(self):
         """Generate a status post"""
         print("\nGenerating Status Post...")
@@ -179,6 +196,7 @@ class F1AgentInterface:
         post = self.agent.speak(context_type)
         print(f"\nGenerated Post:\n{post}")
     
+    # Handle selection for comment reply 
     def reply_to_comment(self):
         """Generate reply to a fan comment"""
         print("\nReply to Fan Comment")
@@ -190,6 +208,7 @@ class F1AgentInterface:
         else:
             print("No comment provided")
     
+     # Handle selection for mentioning a person or team/competitor  in a post
     def mention_person(self):
         """Generate mention post"""
         print("\nMention Teammate/Competitor")
@@ -209,6 +228,9 @@ class F1AgentInterface:
         else:
             print("No name provided")
     
+    # Handle simulation of a liking a post as required - For this assessment I have chosen to analyze the post and respond with a simple reaction.
+    # For a real world scenario, this can however be linked to an API call for integration with social media platforms or a linked to a created tool which drives a desired action.
+    # My implmentation tries to analyze sentiment of the post and emoji based on the sentiment
     def simulate_like(self):
         """Simulate liking a post"""
         print("\nSimulate Like Action")
@@ -239,7 +261,7 @@ class F1AgentInterface:
         stage_choice = input("Enter choice (1-4): ").strip()
         stage = stages.get(stage_choice, RaceStage.PRACTICE)
         
-        # Session type (if applicable)
+        # Session type
         session_type = None
         if stage in [RaceStage.PRACTICE, RaceStage.QUALIFYING]:
             sessions = {
@@ -256,8 +278,8 @@ class F1AgentInterface:
             session_type = sessions.get(session_choice)
         
         # Circuit and race name
-        circuit = input("Enter circuit name (e.g., Monaco, Silverstone): ").strip()
-        race_name = input("Enter race name (e.g., Monaco Grand Prix): ").strip()
+        circuit = input("Enter circuit name (e.g.,Nurburgring Monaco, Silverstone): ").strip()
+        race_name = input("Enter race name (e.g.,German Grand Prix, Britsh Grand Prix Monaco Grand Prix): ").strip()
         
         # Last result (if post-race)
         last_result = None
@@ -281,6 +303,21 @@ class F1AgentInterface:
                 except ValueError:
                     position = None
         
+        # Add mood selection
+        print("\nSelect agent mood:")
+        moods = {
+            "1": "excited", "2": "confident", "3": "disappointed", 
+            "4": "focused", "5": "neutral", "6": "frustrated"
+        }
+        
+        for key, mood in moods.items():
+            print(f"{key}. {mood.title()}")
+        
+        mood_choice = input("Enter choice (1-6, default: 5): ").strip()
+        if not mood_choice:
+            mood_choice = "5"
+        mood = moods.get(mood_choice, "neutral")
+        
         # Update agent context
         self.agent.update_context(
             stage=stage,
@@ -288,37 +325,56 @@ class F1AgentInterface:
             circuit_name=circuit or "Circuit",
             race_name=race_name or "Grand Prix",
             last_result=last_result,
-            position=position
+            position=position,
+            mood=mood
         )
         
         print("Context updated successfully!")
     
+    # Handle selection for viewing agent's internal thoughts and information - Useful for debugging and understanding agent's reasoning
     def view_thoughts(self):
         """Display agent's internal thoughts"""
         print("\nAgent Thoughts:")
         thoughts = self.agent.think()
         print(thoughts)
-    
+
+    # Handle selection for viewing agent's information - Useful for debugging and understanding agent's configuration    
     def view_agent_info(self):
         """Display current agent information"""
         print("\nAgent Information:")
         info = self.agent.get_agent_info()
         
+        # Print basic agent info first
+        print(f"  Racer Name: {info.get('racer_name', 'Unknown')}")
+        print(f"  Team Name: {info.get('team_name', 'Unknown')}")
+        
+        # Clearly highlight race result information if available
+        if 'last_result' in info and info['last_result'] is not None:
+            print("\n  Race Result Information:")
+            print(f"  ➤ Recent Result: {info['last_result'].value.title()}")
+            
+            if 'position' in info and info['position'] is not None:
+                print(f"  ➤ Finishing Position: {info['position']}")
+        
+        # Display remaining information
+        print("\n  Current Race Context:")
         for key, value in info.items():
-            if value is not None:
-                print(f"  {key.replace('_', ' ').title()}: {value}")
+            # Skip keys we've already displayed
+            if key not in ['racer_name', 'team_name', 'last_result', 'position'] and value is not None:
+                print(f"  ➤ {key.replace('_', ' ').title()}: {value}")
     
+    # Handle selection for running predefined demo scenarios - Useful for showcasing agent's capabilities and generating sample outputs - also used when step testing my solution
     def run_demo_scenarios(self):
         """Run predefined demo scenarios"""
         print("\nRunning Demo Scenarios...")
         
         scenarios = [
             {
-                "name": "Practice Session at Monaco",
+                "name": "Practice Session at Nurburgring",
                 "stage": RaceStage.PRACTICE,
                 "session": SessionType.FP2,
-                "circuit": "Monaco",
-                "race": "Monaco Grand Prix"
+                "circuit": "Nurburgring",
+                "race": "German Grand Prix"
             },
             {
                 "name": "Victory at Silverstone",
@@ -345,6 +401,7 @@ class F1AgentInterface:
             }
         ]
         
+        # Run through each scenario and generate outputs
         for i, scenario in enumerate(scenarios, 1):
             print(f"\n{i}. {scenario['name']}")
             print("-" * 40)
@@ -366,12 +423,13 @@ class F1AgentInterface:
             
             input("\nPress Enter to continue to next scenario...")
     
+    # Handle selection for simulating a race weekend 
     def race_weekend_simulation(self):
         """Simulate an entire race weekend"""
         print("\nQuick Race Weekend Simulation")
         
-        circuit = input("Enter circuit name (default: Interlagos): ").strip() or "Interlagos"
-        race_name = input("Enter race name (default: Brazilian Grand Prix): ").strip() or "Brazilian Grand Prix"
+        circuit = input("Enter circuit name (default: Nurburgring): ").strip() or "Interlagos"
+        race_name = input("Enter race name (default: German Grand Prix): ").strip() or "Brazilian Grand Prix"
         
         weekend_stages = [
             {"name": "Friday Practice", "stage": RaceStage.PRACTICE, "session": SessionType.FP1},
@@ -397,15 +455,17 @@ class F1AgentInterface:
             
             input("Press Enter for next stage...")
     
+    
     def run(self):
-        """Main interface loop"""
+        """Main applicatiuon interface loop"""
         while True:
             try:
                 self.display_menu()
                 choice = self.get_user_choice()
                 
+                # Drive application logic based on user input
                 if choice == "0":
-                    print("\nThanks for using F1 Racer AI Agent!")
+                    print("\n You have chosen to exit the F1 Racer Agent application. Goodbye!")
                     break
                 elif choice == "1":
                     self.generate_status_post()
@@ -426,9 +486,11 @@ class F1AgentInterface:
                 elif choice == "9":
                     self.race_weekend_simulation()
                 else:
+                    # Catch invalid inputs
                     print("Invalid choice. Please try again.")
                     
             except KeyboardInterrupt:
+                # Allow for graceful exit on forced exit
                 print("\n\nExiting F1 Agent. Goodbye!")
                 break
             except Exception as e:
