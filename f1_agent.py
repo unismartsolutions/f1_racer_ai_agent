@@ -19,31 +19,31 @@ import torch
 from textblob import TextBlob
 import numpy as np
 
-# Download required NLTK data
-def download_nltk_data():
-    """Download NLTK data with version compatibility"""
+# # Download required NLTK data
+# def download_nltk_data():
+#     """Download NLTK data with version compatibility"""
     
-    nltk_resources = [
-        ('tokenizers/punkt', 'punkt'),
-        ('tokenizers/punkt_tab', 'punkt_tab'),
-        ('vader_lexicon', 'vader_lexicon'),
-        ('corpora/stopwords', 'stopwords'),
-        ('taggers/averaged_perceptron_tagger', 'averaged_perceptron_tagger'),
-        ('taggers/averaged_perceptron_tagger_eng', 'averaged_perceptron_tagger_eng'),
-        ('chunkers/maxent_ne_chunker', 'maxent_ne_chunker'),
-        ('corpora/words', 'words')
-    ]
+#     nltk_resources = [
+#         ('tokenizers/punkt', 'punkt'),
+#         ('tokenizers/punkt_tab', 'punkt_tab'),
+#         ('vader_lexicon', 'vader_lexicon'),
+#         ('corpora/stopwords', 'stopwords'),
+#         ('taggers/averaged_perceptron_tagger', 'averaged_perceptron_tagger'),
+#         ('taggers/averaged_perceptron_tagger_eng', 'averaged_perceptron_tagger_eng'),
+#         ('chunkers/maxent_ne_chunker', 'maxent_ne_chunker'),
+#         ('corpora/words', 'words')
+#     ]
     
-    for resource_path, resource_name in nltk_resources:
-        try:
-            nltk.data.find(resource_path)
-        except LookupError:
-            try:
-                nltk.download(resource_name, quiet=True)
-            except Exception:
-                continue
+#     for resource_path, resource_name in nltk_resources:
+#         try:
+#             nltk.data.find(resource_path)
+#         except LookupError:
+#             try:
+#                 nltk.download(resource_name, quiet=True)
+#             except Exception:
+#                 continue
 
-download_nltk_data()
+# download_nltk_data()
 
 class RaceStage(Enum):
     """Different race weekend stages"""
