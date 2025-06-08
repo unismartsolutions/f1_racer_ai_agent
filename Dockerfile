@@ -21,14 +21,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Download spaCy model
 RUN python -m spacy download en_core_web_sm
 
-# Pre-download NLTK data to avoid runtime downloads
+# Pre-download NLTK data to avoid runtime downloads (with version compatibility)
 RUN python -c "import nltk; \
-    nltk.download('punkt', quiet=True); \
-    nltk.download('vader_lexicon', quiet=True); \
-    nltk.download('stopwords', quiet=True); \
-    nltk.download('averaged_perceptron_tagger', quiet=True); \
-    nltk.download('maxent_ne_chunker', quiet=True); \
-    nltk.download('words', quiet=True)"
+    resources = ['punkt', 'punkt_tab', 'vader_lexicon', 'stopwords', 'averaged_perceptron_tagger', 'averaged_perceptron_tagger_eng', 'maxent_ne_chunker', 'words']; \
+    [nltk.download(r, quiet=True) for r in resources]; \
+    print('NLTK data downloaded')" || echo "Some NLTK downloads failed (normal)"
 
 # Copy application files
 COPY f1_agent.py .
