@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Comprehensive testing suite for F1 Racer AI Agent with NLP capabilities
-Tests all core functionality and validates NLP-enhanced output quality
+Testing suite for F1 Racer AI Agent with NLP capabilities
+Tests core functionality and validates NLP-enhanced output quality
 """
 
 import sys
@@ -9,19 +9,18 @@ import time
 import warnings
 from typing import List, Dict, Any
 
-# Suppress warnings for cleaner test output
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
 try:
     from f1_agent import F1RacerAgent, RaceStage, SessionType, RaceResult
 except ImportError as e:
-    print(f"❌ Error importing F1 agent: {e}")
-    print("💡 Make sure all NLP dependencies are installed")
+    print(f"Error importing F1 agent: {e}")
+    print("Make sure all NLP dependencies are installed")
     sys.exit(1)
 
 class F1AgentTester:
-    """Comprehensive testing suite for F1 Racer AI Agent"""
+    """Testing suite for F1 Racer AI Agent"""
     
     def __init__(self):
         self.agent = F1RacerAgent("Test Driver", "Test Team")
@@ -34,9 +33,9 @@ class F1AgentTester:
         self.total_tests += 1
         if passed:
             self.passed_tests += 1
-            status = "✅ PASS"
+            status = "PASS"
         else:
-            status = "❌ FAIL"
+            status = "FAIL"
         
         result = {
             "test": test_name,
@@ -51,7 +50,7 @@ class F1AgentTester:
     
     def test_agent_initialization(self):
         """Test agent initialization and basic properties"""
-        print("\n🧪 Testing Agent Initialization...")
+        print("\nTesting Agent Initialization...")
         
         # Test default initialization
         try:
@@ -78,7 +77,7 @@ class F1AgentTester:
     
     def test_context_updates(self):
         """Test context update functionality"""
-        print("\n🧪 Testing Context Updates...")
+        print("\nTesting Context Updates...")
         
         # Test stage update
         try:
@@ -121,7 +120,7 @@ class F1AgentTester:
     
     def test_text_generation(self):
         """Test various text generation scenarios"""
-        print("\n🧪 Testing Text Generation...")
+        print("\nTesting Text Generation...")
         
         test_scenarios = [
             {"context": "general", "expected_length": 50},
@@ -133,7 +132,7 @@ class F1AgentTester:
         
         for scenario in test_scenarios:
             try:
-                # Set appropriate context for the test
+                # Set appropriate context
                 if scenario["context"] == "win":
                     self.agent.update_context(RaceStage.POST_RACE, last_result=RaceResult.WIN)
                 elif scenario["context"] == "practice":
@@ -159,7 +158,7 @@ class F1AgentTester:
     
     def test_reply_generation(self):
         """Test reply generation for various comment types"""
-        print("\n🧪 Testing Reply Generation...")
+        print("\nTesting Reply Generation...")
         
         test_comments = [
             "Great drive today!",
@@ -188,7 +187,7 @@ class F1AgentTester:
     
     def test_mention_generation(self):
         """Test mention generation functionality"""
-        print("\n🧪 Testing Mention Generation...")
+        print("\nTesting Mention Generation...")
         
         test_scenarios = [
             {"person": "Carlos Sainz", "context": "positive"},
@@ -216,7 +215,7 @@ class F1AgentTester:
     
     def test_like_simulation(self):
         """Test like action simulation"""
-        print("\n🧪 Testing Like Simulation...")
+        print("\nTesting Like Simulation...")
         
         test_posts = [
             "Great race today everyone!",
@@ -242,7 +241,7 @@ class F1AgentTester:
     
     def test_thinking_capability(self):
         """Test the thinking/internal analysis capability"""
-        print("\n🧪 Testing Thinking Capability...")
+        print("\nTesting Thinking Capability...")
         
         test_contexts = [
             RaceStage.PRACTICE,
@@ -270,9 +269,8 @@ class F1AgentTester:
     
     def test_hashtag_generation(self):
         """Test contextual hashtag generation"""
-        print("\n🧪 Testing Hashtag Generation...")
+        print("\nTesting Hashtag Generation...")
         
-        # Test different contexts
         contexts = [
             (RaceStage.PRACTICE, SessionType.FP1),
             (RaceStage.QUALIFYING, SessionType.Q3),
@@ -297,7 +295,7 @@ class F1AgentTester:
     
     def test_nlp_capabilities(self):
         """Test NLP functionality including sentiment analysis and entity extraction"""
-        print("\n🧪 Testing NLP Capabilities...")
+        print("\nTesting NLP Capabilities...")
         
         # Test sentiment analysis
         try:
@@ -358,7 +356,7 @@ class F1AgentTester:
     
     def test_enhanced_reply_analysis(self):
         """Test NLP-enhanced reply generation"""
-        print("\n🧪 Testing Enhanced Reply Analysis...")
+        print("\nTesting Enhanced Reply Analysis...")
         
         test_comments = [
             ("Amazing drive today! You were flying out there!", "positive"),
@@ -369,11 +367,9 @@ class F1AgentTester:
         
         for comment, expected_type in test_comments:
             try:
-                # Analyze comment using NLP
                 sentiment = self.agent.nlp_processor.analyze_sentiment(comment)
                 keywords = self.agent.nlp_processor.extract_keywords(comment)
                 
-                # Generate reply
                 reply = self.agent.reply_to_comment(comment)
                 
                 success = (
@@ -391,7 +387,7 @@ class F1AgentTester:
     
     def test_mood_analysis_with_nlp(self):
         """Test NLP-enhanced mood analysis"""
-        print("\n🧪 Testing NLP Mood Analysis...")
+        print("\nTesting NLP Mood Analysis...")
         
         mood_scenarios = [
             (RaceResult.WIN, "positive"),
@@ -407,10 +403,8 @@ class F1AgentTester:
                     last_result=result
                 )
                 
-                # Check if mood was analyzed correctly
                 mood = self.agent.context.mood
                 
-                # Verify mood makes sense for the result
                 mood_match = False
                 if expected_mood_category == "positive" and mood in ["positive"]:
                     mood_match = True
@@ -428,9 +422,8 @@ class F1AgentTester:
     
     def test_dynamic_responses(self):
         """Test that responses are dynamic and not repetitive"""
-        print("\n🧪 Testing Dynamic Responses...")
+        print("\nTesting Dynamic Responses...")
         
-        # Generate multiple responses with same context
         self.agent.update_context(RaceStage.PRACTICE, session_type=SessionType.FP2)
         
         responses = []
@@ -442,36 +435,9 @@ class F1AgentTester:
                 self.log_test("Dynamic response generation", False, str(e))
                 return
         
-        # Check for uniqueness
         unique_responses = len(set(responses))
         total_responses = len(responses)
         
-        # At least 80% should be unique (NLP enhancement should increase variety)
-        uniqueness_ratio = unique_responses / total_responses
-        success = uniqueness_ratio >= 0.8
-        
-        self.log_test("Response uniqueness", success,
-                     f"Unique: {unique_responses}/{total_responses} ({uniqueness_ratio:.1%})")
-        """Test that responses are dynamic and not repetitive"""
-        print("\n🧪 Testing Dynamic Responses...")
-        
-        # Generate multiple responses with same context
-        self.agent.update_context(RaceStage.PRACTICE, session_type=SessionType.FP2)
-        
-        responses = []
-        for i in range(5):
-            try:
-                response = self.agent.speak("practice")
-                responses.append(response)
-            except Exception as e:
-                self.log_test("Dynamic response generation", False, str(e))
-                return
-        
-        # Check for uniqueness
-        unique_responses = len(set(responses))
-        total_responses = len(responses)
-        
-        # At least 80% should be unique
         uniqueness_ratio = unique_responses / total_responses
         success = uniqueness_ratio >= 0.8
         
@@ -480,7 +446,7 @@ class F1AgentTester:
     
     def test_agent_info(self):
         """Test agent information retrieval"""
-        print("\n🧪 Testing Agent Info...")
+        print("\nTesting Agent Info...")
         
         try:
             info = self.agent.get_agent_info()
@@ -496,7 +462,7 @@ class F1AgentTester:
     
     def test_race_weekend_simulation(self):
         """Test complete race weekend progression"""
-        print("\n🧪 Testing Race Weekend Simulation...")
+        print("\nTesting Race Weekend Simulation...")
         
         weekend_progression = [
             (RaceStage.PRACTICE, SessionType.FP1),
@@ -515,7 +481,6 @@ class F1AgentTester:
                     race_name="Test Grand Prix"
                 )
                 
-                # Generate content for each stage
                 post = self.agent.speak()
                 thoughts = self.agent.think()
                 
@@ -538,14 +503,13 @@ class F1AgentTester:
     
     def run_performance_test(self):
         """Test response generation performance"""
-        print("\n🧪 Testing Performance...")
+        print("\nTesting Performance...")
         
         try:
             import time
             
             start_time = time.time()
             
-            # Generate 10 responses
             for i in range(10):
                 self.agent.speak("general")
             
@@ -553,7 +517,6 @@ class F1AgentTester:
             elapsed = end_time - start_time
             avg_time = elapsed / 10
             
-            # Should generate responses quickly (under 0.1s each)
             success = avg_time < 0.1
             
             self.log_test("Response generation performance", success,
@@ -564,10 +527,9 @@ class F1AgentTester:
     
     def run_all_tests(self):
         """Run all test suites"""
-        print("🏁 F1 Racer AI Agent - Comprehensive Test Suite")
-        print("=" * 60)
+        print("F1 Racer AI Agent - Test Suite")
+        print("=" * 40)
         
-        # Run all test methods
         test_methods = [
             self.test_agent_initialization,
             self.test_context_updates,
@@ -590,16 +552,15 @@ class F1AgentTester:
             try:
                 test_method()
             except Exception as e:
-                print(f"❌ Test suite error in {test_method.__name__}: {e}")
+                print(f"Test suite error in {test_method.__name__}: {e}")
         
-        # Print summary
         self.print_test_summary()
     
     def print_test_summary(self):
-        """Print comprehensive test results summary"""
-        print("\n" + "=" * 60)
-        print("📊 TEST SUMMARY")
-        print("=" * 60)
+        """Print test results summary"""
+        print("\n" + "=" * 40)
+        print("TEST SUMMARY")
+        print("=" * 40)
         
         pass_rate = (self.passed_tests / self.total_tests * 100) if self.total_tests > 0 else 0
         
@@ -609,35 +570,33 @@ class F1AgentTester:
         print(f"Pass Rate: {pass_rate:.1f}%")
         
         if pass_rate >= 90:
-            status = "🟢 EXCELLENT"
+            status = "EXCELLENT"
         elif pass_rate >= 75:
-            status = "🟡 GOOD"
+            status = "GOOD"
         elif pass_rate >= 50:
-            status = "🟠 NEEDS IMPROVEMENT"
+            status = "NEEDS IMPROVEMENT"
         else:
-            status = "🔴 CRITICAL ISSUES"
+            status = "CRITICAL ISSUES"
         
         print(f"Overall Status: {status}")
         
-        # Show failed tests
         failed_tests = [r for r in self.test_results if not r["passed"]]
         if failed_tests:
-            print(f"\n❌ FAILED TESTS ({len(failed_tests)}):")
+            print(f"\nFAILED TESTS ({len(failed_tests)}):")
             for test in failed_tests:
                 print(f"  - {test['test']}")
                 if test["details"]:
                     print(f"    Details: {test['details']}")
         
-        print("\n" + "=" * 60)
+        print("\n" + "=" * 40)
         
-        return pass_rate >= 75  # Return True if tests pass acceptable threshold
+        return pass_rate >= 75
 
 def main():
     """Main test execution"""
     tester = F1AgentTester()
     success = tester.run_all_tests()
     
-    # Exit with appropriate code
     sys.exit(0 if success else 1)
 
 if __name__ == "__main__":
