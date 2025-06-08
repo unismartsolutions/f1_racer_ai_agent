@@ -19,36 +19,35 @@ import torch
 from textblob import TextBlob
 import numpy as np
 
-# Download required NLTK data
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt', quiet=True)
+# Download required NLTK data with fallback for different NLTK versions
+def download_nltk_data():
+    """Download NLTK data with version compatibility"""
+    
+    # Essential downloads with fallbacks for different NLTK versions
+    nltk_resources = [
+        ('tokenizers/punkt', 'punkt'),
+        ('tokenizers/punkt_tab', 'punkt_tab'),  # Newer NLTK versions
+        ('vader_lexicon', 'vader_lexicon'),
+        ('corpora/stopwords', 'stopwords'),
+        ('taggers/averaged_perceptron_tagger', 'averaged_perceptron_tagger'),
+        ('taggers/averaged_perceptron_tagger_eng', 'averaged_perceptron_tagger_eng'),  # Newer versions
+        ('chunkers/maxent_ne_chunker', 'maxent_ne_chunker'),
+        ('corpora/words', 'words')
+    ]
+    
+    for resource_path, resource_name in nltk_resources:
+        try:
+            nltk.data.find(resource_path)
+        except LookupError:
+            try:
+                print(f"📥 Downloading NLTK resource: {resource_name}")
+                nltk.download(resource_name, quiet=True)
+            except Exception as e:
+                print(f"⚠️  Warning: Could not download {resource_name}: {e}")
+                continue
 
-try:
-    nltk.data.find('vader_lexicon')
-except LookupError:
-    nltk.download('vader_lexicon', quiet=True)
-
-try:
-    nltk.data.find('stopwords')
-except LookupError:
-    nltk.download('stopwords', quiet=True)
-
-try:
-    nltk.data.find('averaged_perceptron_tagger')
-except LookupError:
-    nltk.download('averaged_perceptron_tagger', quiet=True)
-
-try:
-    nltk.data.find('maxent_ne_chunker')
-except LookupError:
-    nltk.download('maxent_ne_chunker', quiet=True)
-
-try:
-    nltk.data.find('words')
-except LookupError:
-    nltk.download('words', quiet=True)
+# Download NLTK data
+download_nltk_data()
 
 class RaceStage(Enum):
     """Enum for different race weekend stages"""
@@ -95,21 +94,44 @@ class NLPProcessor:
     """Advanced NLP processor using NLTK, spaCy, and Transformers"""
     
     def __init__(self):
-        # Initialize NLTK components
-        self.sentiment_analyzer = SentimentIntensityAnalyzer()
-        self.stop_words = set(stopwords.words('english'))
+        # Initialize with error handling for different NLTK versions
+        self.nltk_ready = False
+        self.spacy_ready = False
+        self.transformers_ready = False
+        
+        # Initialize NLTK components with fallbacks
+        try:
+            self.sentiment_analyzer = SentimentIntensityAnalyzer()
+            self.stop_words = set(stopwords.words('english'))
+            self.nltk_ready = True
+            print("✅ NLTK initialized successfully")
+        except Exception as e:
+            print(f"⚠️  NLTK initialization warning: {e}")
+            print("🔄 Using fallback sentiment analysis...")
+            self.sentiment_analyzer = None
+            self.stop_words = set(['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'])
         
         # Initialize spaCy (with fallback to smaller model)
         try:
             self.nlp = spacy.load("en_core_web_sm")
+            self.spacy_ready = True
+            print("✅ spaCy initialized successfully")
         except OSError:
             print("⚠️  Warning: spaCy model 'en_core_web_sm' not found. Installing...")
-            os.system("python -m spacy download en_core_web_sm")
             try:
+                os.system("python -m spacy download en_core_web_sm")
                 self.nlp = spacy.load("en_core_web_sm")
-            except OSError:
-                print("⚠️  Warning: Using basic spaCy model")
-                self.nlp = spacy.blank("en")
+                self.spacy_ready = True
+                print("✅ spaCy model installed and loaded")
+            except Exception as e:
+                print(f"⚠️  Warning: Using basic spaCy model: {e}")
+                try:
+                    self.nlp = spacy.blank("en")
+                    self.spacy_ready = True
+                except Exception:
+                    print("⚠️  spaCy not available, using fallback text processing")
+                    self.nlp = None
+                    self.spacy_ready = False
         
         # Initialize text generation pipeline (with fallback)
         try:
@@ -122,32 +144,122 @@ class NLPProcessor:
                 temperature=0.8,
                 pad_token_id=50256
             )
+            self.transformers_ready = True
+            print("✅ Transformers initialized successfully")
         except Exception as e:
             print(f"⚠️  Warning: Could not load transformer model: {e}")
+            print("🔄 Using template-based text generation...")
             self.text_generator = None
+            self.transformers_ready = False
     
     def analyze_sentiment(self, text: str) -> Dict[str, float]:
-        """Analyze sentiment using NLTK's VADER"""
-        return self.sentiment_analyzer.polarity_scores(text)
+        """Analyze sentiment using NLTK's VADER with fallback"""
+        if self.nltk_ready and self.sentiment_analyzer:
+            try:
+                return self.sentiment_analyzer.polarity_scores(text)
+            except Exception as e:
+                print(f"⚠️  VADER error: {e}, using fallback")
+        
+        # Fallback sentiment analysis
+        return self._fallback_sentiment_analysis(text)
+    
+    def _fallback_sentiment_analysis(self, text: str) -> Dict[str, float]:
+        """Simple fallback sentiment analysis"""
+        positive_words = ['amazing', 'great', 'awesome', 'fantastic', 'brilliant', 'excellent', 'good', 'win', 'victory', 'success']
+        negative_words = ['bad', 'terrible', 'awful', 'disappointing', 'frustrating', 'failed', 'loss', 'crash', 'dnf']
+        
+        text_lower = text.lower()
+        pos_score = sum(1 for word in positive_words if word in text_lower) / 10
+        neg_score = sum(1 for word in negative_words if word in text_lower) / 10
+        
+        # Simple compound score calculation
+        compound = pos_score - neg_score
+        compound = max(-1, min(1, compound))  # Clamp to [-1, 1]
+        
+        return {
+            'pos': min(1.0, pos_score),
+            'neg': min(1.0, neg_score),
+            'neu': max(0.0, 1.0 - pos_score - neg_score),
+            'compound': compound
+        }
     
     def extract_entities(self, text: str) -> List[Tuple[str, str]]:
-        """Extract named entities using spaCy"""
-        doc = self.nlp(text)
-        return [(ent.text, ent.label_) for ent in doc.ents]
+        """Extract named entities using spaCy with fallback"""
+        if self.spacy_ready and self.nlp:
+            try:
+                doc = self.nlp(text)
+                return [(ent.text, ent.label_) for ent in doc.ents]
+            except Exception as e:
+                print(f"⚠️  spaCy entity extraction error: {e}")
+        
+        # Fallback entity extraction (simple pattern matching)
+        return self._fallback_entity_extraction(text)
+    
+    def _fallback_entity_extraction(self, text: str) -> List[Tuple[str, str]]:
+        """Simple fallback entity extraction"""
+        entities = []
+        
+        # Simple patterns for F1-related entities
+        f1_circuits = ['Monaco', 'Silverstone', 'Spa', 'Monza', 'Interlagos', 'Suzuka', 'Barcelona']
+        f1_teams = ['Mercedes', 'Ferrari', 'Red Bull', 'McLaren', 'Alpine', 'Aston Martin']
+        
+        for circuit in f1_circuits:
+            if circuit in text:
+                entities.append((circuit, 'GPE'))  # Geo-political entity
+        
+        for team in f1_teams:
+            if team in text:
+                entities.append((team, 'ORG'))  # Organization
+        
+        return entities
     
     def extract_keywords(self, text: str) -> List[str]:
-        """Extract keywords using NLTK POS tagging"""
-        tokens = word_tokenize(text.lower())
-        pos_tags = pos_tag(tokens)
+        """Extract keywords using NLTK POS tagging with fallback"""
+        if self.nltk_ready:
+            try:
+                tokens = word_tokenize(text.lower())
+                pos_tags = pos_tag(tokens)
+                
+                # Extract nouns, adjectives, and verbs (excluding stopwords)
+                keywords = [
+                    word for word, pos in pos_tags 
+                    if (pos.startswith('NN') or pos.startswith('JJ') or pos.startswith('VB')) 
+                    and word not in self.stop_words 
+                    and len(word) > 2
+                ]
+                return list(set(keywords))
+            except Exception as e:
+                print(f"⚠️  NLTK keyword extraction error: {e}")
         
-        # Extract nouns, adjectives, and verbs (excluding stopwords)
+        # Fallback keyword extraction
+        return self._fallback_keyword_extraction(text)
+    
+    def _fallback_keyword_extraction(self, text: str) -> List[str]:
+        """Simple fallback keyword extraction"""
+        # Simple word extraction excluding common stop words
+        words = text.lower().split()
         keywords = [
-            word for word, pos in pos_tags 
-            if (pos.startswith('NN') or pos.startswith('JJ') or pos.startswith('VB')) 
-            and word not in self.stop_words 
-            and len(word) > 2
+            word.strip('.,!?;:"()[]') for word in words 
+            if len(word) > 3 and word not in self.stop_words
         ]
         return list(set(keywords))
+    
+    def _safe_sentence_tokenize(self, text: str) -> List[str]:
+        """Safe sentence tokenization with fallback"""
+        try:
+            # Try newer NLTK first
+            return sent_tokenize(text)
+        except Exception:
+            try:
+                # Try with different tokenizer
+                from nltk.tokenize.punkt import PunktSentenceTokenizer
+                tokenizer = PunktSentenceTokenizer()
+                return tokenizer.tokenize(text)
+            except Exception:
+                # Fallback to simple split
+                import re
+                sentences = re.split(r'[.!?]+', text)
+                return [s.strip() for s in sentences if s.strip()]
     
     def enhance_text_with_context(self, base_text: str, context_keywords: List[str]) -> str:
         """Enhance text using contextual keywords"""
@@ -175,7 +287,7 @@ class NLPProcessor:
     
     def generate_creative_text(self, prompt: str, max_length: int = 50) -> str:
         """Generate creative text using transformers (if available)"""
-        if self.text_generator is None:
+        if not self.transformers_ready or self.text_generator is None:
             # Fallback to template-based generation
             return self._fallback_generation(prompt)
         
@@ -202,8 +314,8 @@ class NLPProcessor:
             if len(generated) > len(clean_prompt):
                 new_content = generated[len(clean_prompt):].strip()
                 
-                # Clean up the generated text
-                sentences = sent_tokenize(new_content)
+                # Clean up the generated text using safe tokenization
+                sentences = self._safe_sentence_tokenize(new_content)
                 if sentences:
                     # Take the first complete sentence
                     first_sentence = sentences[0]
