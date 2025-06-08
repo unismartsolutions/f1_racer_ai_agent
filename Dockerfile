@@ -46,4 +46,3 @@ CMD ["python", "run_agent.py"]
 
 # Alternative commands for different use cases:
 # For demo mode: CMD ["python", "f1_agent.py"]
-# For API mode: CMD ["python", "-c", "from f1_agent import F1RacerAgent; print('F1 Agent ready for import')"]

@@ -22,46 +22,223 @@ except ImportError as e:
     sys.exit(1)
 
 class F1AgentInterface:
-    """Interactive interface for the F1 Racer AI Agent"""
+    """Interactive interface for the F1 Racer AI Agent with mandatory setup"""
     
     def __init__(self):
         self.agent = None
-        self.setup_agent()
+        self.setup_complete = False
+        self.context_configured = False
     
-    def setup_agent(self):
-        """Setup agent with user configuration"""
+    def initial_setup(self):
+        """Mandatory initial setup before accessing main features"""
         print("🏁 Welcome to the F1 Racer AI Agent!")
-        print("=" * 50)
+        print("=" * 60)
+        print("📋 MANDATORY SETUP - Please configure your agent first")
+        print()
         
-        # Get agent configuration
-        racer_name = input("Enter racer name (default: Alex Driver): ").strip()
-        if not racer_name:
-            racer_name = "Alex Driver"
-            
-        team_name = input("Enter team name (default: Racing Team): ").strip()
-        if not team_name:
-            team_name = "Racing Team"
+        # Step 1: Agent Configuration
+        print("🔧 STEP 1: Agent Configuration")
+        print("-" * 30)
+        
+        while True:
+            racer_name = input("Enter racer name (e.g., Lewis Hamilton): ").strip()
+            if racer_name:
+                break
+            print("❌ Racer name is required. Please try again.")
+        
+        while True:
+            team_name = input("Enter team name (e.g., Mercedes AMG): ").strip()
+            if team_name:
+                break
+            print("❌ Team name is required. Please try again.")
         
         self.agent = F1RacerAgent(racer_name, team_name)
         print(f"\n✅ Agent created: {racer_name} from {team_name}")
+        self.setup_complete = True
+        
+        # Step 2: Initial Context Setup
+        print(f"\n🏎️  STEP 2: Initial Race Context Setup")
+        print("-" * 30)
+        print("💡 Setting up race context ensures realistic and appropriate responses")
+        print()
+        
+        self.mandatory_context_setup()
+        
+        print("\n" + "=" * 60)
+        print("✅ SETUP COMPLETE! Your F1 Agent is ready for action!")
+        print(f"👤 Driver: {racer_name}")
+        print(f"🏁 Team: {team_name}")
+        print(f"📍 Current Context: {self.agent.context.stage.value.title()} at {self.agent.context.circuit_name}")
+        print("=" * 60)
+        input("\nPress Enter to continue to main menu...")
+    
+    def mandatory_context_setup(self):
+        """Mandatory context setup - simplified but required"""
+        
+        # Stage selection (required)
+        print("🏁 Select current race stage:")
+        stages = {
+            "1": (RaceStage.PRACTICE, "Practice Session"),
+            "2": (RaceStage.QUALIFYING, "Qualifying"),
+            "3": (RaceStage.RACE, "Race Day"),
+            "4": (RaceStage.POST_RACE, "Post-Race")
+        }
+        
+        for key, (stage, description) in stages.items():
+            print(f"{key}. {description}")
+        
+        while True:
+            stage_choice = input("Choose stage (1-4): ").strip()
+            if stage_choice in stages:
+                selected_stage, stage_desc = stages[stage_choice]
+                break
+            print("❌ Please select a valid option (1-4)")
+        
+        # Circuit and race name (required)
+        while True:
+            circuit = input("Enter circuit name (e.g., Monaco, Silverstone): ").strip()
+            if circuit:
+                break
+            print("❌ Circuit name is required.")
+        
+        while True:
+            race_name = input("Enter race name (e.g., Monaco Grand Prix): ").strip()
+            if race_name:
+                break
+            print("❌ Race name is required.")
+        
+        # Optional session type for practice/qualifying
+        session_type = None
+        if selected_stage in [RaceStage.PRACTICE, RaceStage.QUALIFYING]:
+            print(f"\n📋 Select session type for {stage_desc}:")
+            if selected_stage == RaceStage.PRACTICE:
+                sessions = {"1": SessionType.FP1, "2": SessionType.FP2, "3": SessionType.FP3}
+            else:
+                sessions = {"1": SessionType.Q1, "2": SessionType.Q2, "3": SessionType.Q3}
+            
+            for key, session in sessions.items():
+                print(f"{key}. {session.value}")
+            
+            session_choice = input("Choose session (or press Enter to skip): ").strip()
+            if session_choice in sessions:
+                session_type = sessions[session_choice]
+        
+        # Optional recent result for post-race
+        last_result = None
+        position = None
+        if selected_stage == RaceStage.POST_RACE:
+            print(f"\n📊 What was the result of the recent race?")
+            results = {
+                "1": (RaceResult.WIN, "Victory (P1)"),
+                "2": (RaceResult.PODIUM, "Podium (P2-P3)"),
+                "3": (RaceResult.POINTS, "Points finish (P4-P10)"),
+                "4": (RaceResult.DNF, "Did Not Finish (DNF)"),
+                "5": (RaceResult.CRASH, "Crash/Accident"),
+                "6": (RaceResult.DISAPPOINTING, "Poor result but finished")
+            }
+            
+            for key, (result, description) in results.items():
+                print(f"{key}. {description}")
+            
+            result_choice = input("Choose result (or press Enter to skip): ").strip()
+            if result_choice in results:
+                last_result, result_desc = results[result_choice]
+                
+                if last_result in [RaceResult.WIN, RaceResult.PODIUM, RaceResult.POINTS]:
+                    while True:
+                        try:
+                            pos_input = input(f"Enter finishing position for {result_desc}: ").strip()
+                            if pos_input:
+                                position = int(pos_input)
+                                if 1 <= position <= 20:
+                                    break
+                                else:
+                                    print("❌ Position must be between 1 and 20")
+                            else:
+                                break
+                        except ValueError:
+                            print("❌ Please enter a valid number")
+        
+        # Update agent context
+        self.agent.update_context(
+            stage=selected_stage,
+            session_type=session_type,
+            circuit_name=circuit,
+            race_name=race_name,
+            last_result=last_result,
+            position=position
+        )
+        
+        self.context_configured = True
+        print(f"\n✅ Context configured: {stage_desc} at {circuit}")
+        if last_result:
+            print(f"📊 Recent result: {last_result.value.title()}" + (f" (P{position})" if position else ""))
     
     def display_menu(self):
-        """Display the main menu options"""
-        print("\n🏎️  F1 Agent Actions:")
+        """Display the main menu options (only after setup)"""
+        if not self.setup_complete or not self.context_configured:
+            print("❌ Setup must be completed first!")
+            return
+            
+        print(f"\n🏎️  F1 Agent Menu - {self.agent.racer_name} ({self.agent.team_name})")
+        print(f"📍 Current: {self.agent.context.stage.value.title()} at {self.agent.context.circuit_name}")
+        print("-" * 60)
         print("1. Generate Status Post")
         print("2. Reply to Fan Comment")
-        print("3. Mention Teammate/Competitor")
+        print("3. Mention Teammate/Competitor") 
         print("4. Simulate Like Action")
         print("5. Update Race Context")
         print("6. View Agent Thoughts")
         print("7. View Agent Info")
         print("8. Run Demo Scenarios")
         print("9. Quick Race Weekend Simulation")
+        print("10. Debug Content Generation")
+        print("11. Reconfigure Agent")  # New option
         print("0. Exit")
+    
+    def reconfigure_agent(self):
+        """Allow user to reconfigure agent and context"""
+        print("\n🔧 Agent Reconfiguration")
+        print("=" * 40)
+        
+        choice = input("What would you like to reconfigure?\n1. Agent details (name, team)\n2. Race context only\nChoice (1-2): ").strip()
+        
+        if choice == "1":
+            print("\n👤 Reconfiguring agent details...")
+            racer_name = input(f"Enter new racer name (current: {self.agent.racer_name}): ").strip()
+            team_name = input(f"Enter new team name (current: {self.agent.team_name}): ").strip()
+            
+            if racer_name or team_name:
+                self.agent = F1RacerAgent(
+                    racer_name or self.agent.racer_name,
+                    team_name or self.agent.team_name
+                )
+                print("✅ Agent details updated!")
+                
+                # Must reconfigure context for new agent
+                print("\n🏁 Setting up context for reconfigured agent...")
+                self.mandatory_context_setup()
+            else:
+                print("❌ No changes made.")
+        
+        elif choice == "2":
+            print("\n🏁 Reconfiguring race context...")
+            self.mandatory_context_setup()
+        
+        else:
+            print("❌ Invalid choice.")
+    
+    def check_setup_status(self) -> bool:
+        """Check if setup is complete before allowing actions"""
+        if not self.setup_complete or not self.context_configured:
+            print("\n❌ Setup is not complete!")
+            print("💡 Please restart the application to complete setup.")
+            return False
+        return True
     
     def get_user_choice(self) -> str:
         """Get user menu choice"""
-        return input("\nEnter your choice (0-9): ").strip()
+        return input("\nEnter your choice (0-10): ").strip()
     
     def generate_status_post(self):
         """Generate a status post"""
@@ -71,7 +248,7 @@ class F1AgentInterface:
             "1": "general",
             "2": "win", 
             "3": "podium",
-            "4": "disappointing",
+            "4": "loss",  # Changed from disappointing
             "5": "practice",
             "6": "qualifying"
         }
@@ -304,6 +481,34 @@ class F1AgentInterface:
             
             input("Press Enter for next stage...")
     
+    def debug_content_generation(self):
+        """Debug content generation with detailed output"""
+        print("\n🔧 Debug Content Generation")
+        
+        context_types = {
+            "1": "win",
+            "2": "podium", 
+            "3": "loss",  # Changed from disappointing
+            "4": "practice",
+            "5": "qualifying",
+            "6": "general"
+        }
+        
+        print("Select context type to debug:")
+        for key, value in context_types.items():
+            print(f"{key}. {value.title()}")
+        
+        choice = input("Enter choice (1-6, default: win): ").strip()
+        context_type = context_types.get(choice, "win")
+        
+        try:
+            debug_info = self.agent.debug_generation(context_type)
+            print("\n" + "="*50)
+            print("🎯 Debug completed! Check output above for details.")
+        except Exception as e:
+            print(f"❌ Debug failed: {e}")
+            print("💡 Try updating the context first (option 5)")
+    
     def run(self):
         """Main interface loop"""
         while True:
@@ -332,6 +537,8 @@ class F1AgentInterface:
                     self.run_demo_scenarios()
                 elif choice == "9":
                     self.race_weekend_simulation()
+                elif choice == "10":
+                    self.debug_content_generation()
                 else:
                     print("❌ Invalid choice. Please try again.")
                     

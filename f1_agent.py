@@ -586,20 +586,96 @@ class F1RacerAgent:
         return final_message
     
     def _determine_context_type(self) -> str:
-        """Determine context type using NLP analysis of current state"""
+        """Determine context type using current state analysis"""
         
         if self.context.last_result == RaceResult.WIN:
             return "win"
         elif self.context.last_result == RaceResult.PODIUM:
             return "podium"
         elif self.context.last_result in [RaceResult.DNF, RaceResult.CRASH, RaceResult.DISAPPOINTING]:
-            return "disappointing"
+            return "loss"  # Changed from disappointing to loss
         elif self.context.stage == RaceStage.PRACTICE:
             return "practice"
         elif self.context.stage == RaceStage.QUALIFYING:
             return "qualifying"
         else:
             return "practice"
+    
+    def speak(self, context_type: str = "general") -> str:
+        """Generate dynamic text with improved reliability and strict emotion matching"""
+        
+        # Determine context type from current state if not specified
+        if context_type == "general":
+            context_type = self._determine_context_type()
+        
+        # Map old "disappointing" to new "loss" for backward compatibility
+        if context_type == "disappointing":
+            context_type = "loss"
+        
+        # Get templates for the context
+        templates = self.response_templates.get(context_type, self.response_templates["practice"])
+        if not templates:
+            templates = ["Great session today! {team_ref} working hard. Looking forward to more! #F1"]
+        
+        # Select a template
+        base_template = random.choice(templates)
+        
+        # Prepare context variables SPECIFICALLY for this context type (critical fix)
+        context_vars = self._prepare_context_variables_for_type(context_type)
+        
+        # Apply substitutions
+        message = self._apply_vocabulary_substitutions(base_template, context_vars)
+        
+        # Generate hashtags
+        hashtags = self._generate_contextual_hashtags()
+        
+        # Combine and validate
+        full_message = f"{message} {hashtags}"
+        
+        # Final validation and cleanup
+        full_message = self._validate_and_clean_message(full_message)
+        
+        # Additional emotion validation for critical contexts
+        full_message = self._validate_emotion_consistency(full_message, context_type)
+        
+        # Track for learning
+        self._track_generated_content(full_message, context_type)
+        
+        return full_message
+    
+    def _validate_emotion_consistency(self, message: str, context_type: str) -> str:
+        """Validate that emotions are consistent with context type"""
+        
+        # Define incompatible emotion words for each context
+        positive_emotions = ['ecstatic', 'amazing', 'incredible', 'fantastic', 'brilliant', 'yes!', 'victory']
+        negative_emotions = ['gutted', 'disappointed', 'frustrated', 'tough', 'challenging']
+        
+        message_lower = message.lower()
+        
+        # Check for emotion mismatches
+        if context_type == "loss":
+            # Loss context should NOT have positive emotions
+            for pos_emotion in positive_emotions:
+                if pos_emotion in message_lower:
+                    # Replace with appropriate negative emotion
+                    replacement = random.choice(['Gutted', 'Disappointed', 'Tough day'])
+                    message = message.replace(pos_emotion.title(), replacement)
+                    message = message.replace(pos_emotion.upper(), replacement)
+                    message = message.replace(pos_emotion, replacement.lower())
+                    print(f"⚠️  Fixed emotion mismatch: {pos_emotion} -> {replacement}")
+        
+        elif context_type == "win":
+            # Win context should NOT have negative emotions
+            for neg_emotion in negative_emotions:
+                if neg_emotion in message_lower:
+                    # Replace with appropriate positive emotion
+                    replacement = random.choice(['Amazing', 'Incredible', 'Fantastic'])
+                    message = message.replace(neg_emotion.title(), replacement)
+                    message = message.replace(neg_emotion.upper(), replacement)
+                    message = message.replace(neg_emotion, replacement.lower())
+                    print(f"⚠️  Fixed emotion mismatch: {neg_emotion} -> {replacement}")
+        
+        return message
     
     def _prepare_context_variables(self) -> Dict[str, str]:
         """Prepare context variables with NLP-enhanced selection"""
@@ -672,39 +748,97 @@ class F1RacerAgent:
         return message
     
     def _generate_contextual_hashtags(self) -> str:
-        """Generate hashtags using NLP keyword extraction"""
+        """Generate appropriate hashtags based on current context"""
         
         tags = []
         
-        # Extract context-based keywords
-        context_text = f"{self.context.stage.value} {self.context.race_name} {self.context.circuit_name}"
-        keywords = self.nlp_processor.extract_keywords(context_text)
+        # Context-specific hashtags
+        if self.context.last_result == RaceResult.WIN:
+            tags.extend(["#Victory", "#Winner", "#P1"])
+        elif self.context.last_result == RaceResult.PODIUM:
+            tags.extend(["#Podium", f"#P{self.context.position}" if self.context.position else "#TopThree"])
+        elif self.context.last_result in [RaceResult.DNF, RaceResult.CRASH]:
+            tags.extend(["#NeverGiveUp", "#ComeBackStronger"])
+        elif self.context.stage == RaceStage.PRACTICE:
+            if self.context.session_type:
+                tags.append(f"#{self.context.session_type.value}")
+            tags.extend(["#Practice", "#Preparation"])
+        elif self.context.stage == RaceStage.QUALIFYING:
+            tags.extend(["#Qualifying", "#Quali"])
         
-        # Always include race-specific tag
-        if self.context.race_name != "Grand Prix":
-            race_tag = f"#{self.context.race_name.replace(' ', '').replace('Grand', '').replace('Prix', 'GP')}"
-            tags.append(race_tag)
+        # Race-specific tag
+        if self.context.race_name and self.context.race_name != "Grand Prix":
+            race_tag = self.context.race_name.replace(" ", "").replace("Grand", "").replace("Prix", "GP")
+            if not race_tag.endswith("GP"):
+                race_tag += "GP"
+            tags.append(f"#{race_tag}")
         
-        # Add session-specific tags
-        if self.context.session_type:
-            tags.append(f"#{self.context.session_type.value}")
+        # Always include F1
+        tags.append("#F1")
         
-        # Add mood-based tags using sentiment analysis
-        mood_tags = {
-            "positive": ["#Victory", "#Champions", "#Success", "#Winning"],
-            "negative": ["#NeverGiveUp", "#ComeBackStronger", "#Learning", "#Resilience"],
-            "focused": ["#RaceMode", "#Concentrated", "#Preparation", "#Focus"],
-            "neutral": ["#F1", "#Racing", "#TeamWork", "#Motorsport"]
-        }
+        # Team tag
+        if self.team_name:
+            team_tag = self.team_name.replace(" ", "")
+            tags.append(f"#Team{team_tag}")
         
-        if self.context.mood in mood_tags:
-            tags.append(random.choice(mood_tags[self.context.mood]))
+        # Limit to 4 most relevant hashtags
+        return " ".join(tags[:4])
+    
+    def speak(self, context_type: str = "general") -> str:
+        """Generate dynamic text with improved reliability"""
         
-        # Add general F1 tags
-        general_tags = ["#F1", "#Racing", "#Speed", "#Motorsport", "#TeamWork"]
-        tags.append(random.choice(general_tags))
+        # Determine context type from current state if not specified
+        if context_type == "general":
+            context_type = self._determine_context_type()
         
-        return " ".join(tags[:4])  # Limit to 4 hashtags
+        # Get templates for the context
+        templates = self.response_templates.get(context_type, self.response_templates["practice"])
+        if not templates:
+            templates = ["Great session today! {team_ref} working hard. Looking forward to more! #F1"]
+        
+        # Select a template
+        base_template = random.choice(templates)
+        
+        # Prepare context variables
+        context_vars = self._prepare_context_variables()
+        
+        # Apply substitutions
+        message = self._apply_vocabulary_substitutions(base_template, context_vars)
+        
+        # Generate hashtags
+        hashtags = self._generate_contextual_hashtags()
+        
+        # Combine and validate
+        full_message = f"{message} {hashtags}"
+        
+        # Final validation and cleanup
+        full_message = self._validate_and_clean_message(full_message)
+        
+        # Track for learning
+        self._track_generated_content(full_message, context_type)
+        
+        return full_message
+    
+    def _validate_and_clean_message(self, message: str) -> str:
+        """Validate and clean the final message"""
+        
+        # Remove multiple spaces
+        import re
+        message = re.sub(r'\s+', ' ', message)
+        
+        # Ensure proper capitalization at start
+        if message and not message[0].isupper():
+            message = message[0].upper() + message[1:]
+        
+        # Ensure reasonable length
+        if len(message) > 280:
+            sentences = message.split('.')
+            if len(sentences) > 1:
+                # Take first sentence and hashtags
+                hashtag_part = ' '.join([word for word in message.split() if word.startswith('#')])
+                message = sentences[0] + '. ' + hashtag_part
+        
+        return message.strip()
     
     def _apply_final_nlp_processing(self, message: str, hashtags: str) -> str:
         """Apply final NLP processing and validation"""
@@ -728,7 +862,65 @@ class F1RacerAgent:
         
         return corrected
     
+    def debug_generation(self, context_type: str = "win") -> Dict[str, str]:
+        """Debug method to show generation process step by step"""
+        
+        print(f"\n🔍 Debug: Generating {context_type} message")
+        print("-" * 40)
+        
+        # Show current context
+        print(f"Current context:")
+        print(f"  Stage: {self.context.stage.value}")
+        print(f"  Last result: {self.context.last_result.value if self.context.last_result else 'None'}")
+        print(f"  Mood: {self.context.mood}")
+        
+        # Show template selection
+        templates = self.response_templates.get(context_type, self.response_templates["practice"])
+        selected_template = random.choice(templates)
+        print(f"\nSelected template: '{selected_template}'")
+        
+        # Show context variables
+        context_vars = self._prepare_context_variables()
+        print(f"\nContext variables:")
+        for key, value in context_vars.items():
+            print(f"  {key}: '{value}'")
+        
+        # Show substitution
+        message = self._apply_vocabulary_substitutions(selected_template, context_vars)
+        print(f"\nAfter substitution: '{message}'")
+        
+        # Show hashtags
+        hashtags = self._generate_contextual_hashtags()
+        print(f"Generated hashtags: '{hashtags}'")
+        
+        # Show final message
+        final_message = f"{message} {hashtags}"
+        final_message = self._validate_and_clean_message(final_message)
+        print(f"\nFinal message: '{final_message}'")
+        
+        return {
+            "template": selected_template,
+            "message": message,
+            "hashtags": hashtags,
+            "final": final_message
+        }
+    
     def _track_generated_content(self, content: str, context_type: str):
+        """Track generated content for learning and avoiding repetition"""
+        
+        entry = {
+            "timestamp": datetime.now(),
+            "content": content,
+            "context_type": context_type,
+            "mood": self.context.mood,
+            "stage": self.context.stage.value
+        }
+        
+        self.recent_posts.append(entry)
+        
+        # Maintain size limit
+        if len(self.recent_posts) > self.max_recent_posts:
+            self.recent_posts.pop(0)
         """Track generated content for learning and avoiding repetition"""
         
         entry = {
@@ -987,45 +1179,67 @@ class F1RacerAgent:
         
         return base_info
 
-# Enhanced demo with NLP features
+# Enhanced demo with fixed generation and debug capabilities
 if __name__ == "__main__":
-    print("🏁 F1 Racer AI Agent with Advanced NLP")
+    print("🏁 F1 Racer AI Agent with Fixed Content Generation")
     print("=" * 60)
-    print("🔬 Using NLTK, spaCy, and Transformers for enhanced text generation")
+    print("🔧 Enhanced with reliable text generation and validation")
     print()
     
     # Create agent instance
     agent = F1RacerAgent("Max Lightning", "Thunder Racing")
     
-    # Demonstrate NLP capabilities
+    # Test the generation with debug output
+    print("🧪 Testing content generation with debug info:")
+    print()
+    
+    # Test win scenario
+    agent.update_context(
+        stage=RaceStage.POST_RACE,
+        last_result=RaceResult.WIN,
+        position=1,
+        circuit_name="Silverstone",
+        race_name="British Grand Prix"
+    )
+    
+    # Show debug generation
+    debug_info = agent.debug_generation("win")
+    
+    print("\n" + "="*50)
+    print("🎯 Quick generation tests:")
+    
+    # Test multiple scenarios
     scenarios = [
         {
-            "name": "🏃 Practice Session with NLP Analysis",
-            "stage": RaceStage.PRACTICE,
-            "session": SessionType.FP2,
-            "circuit": "Monaco",
-            "race": "Monaco Grand Prix"
-        },
-        {
-            "name": "🏆 Victory with Sentiment Analysis",
+            "name": "🏆 Victory at British GP",
             "stage": RaceStage.POST_RACE,
             "result": RaceResult.WIN,
             "position": 1,
             "circuit": "Silverstone",
-            "race": "British Grand Prix"
+            "race": "British Grand Prix",
+            "context": "win"
         },
         {
-            "name": "💔 Setback with Emotional Intelligence",
+            "name": "🏃 Practice at Monaco",
+            "stage": RaceStage.PRACTICE,
+            "session": SessionType.FP2,
+            "circuit": "Monaco",
+            "race": "Monaco Grand Prix",
+            "context": "practice"
+        },
+        {
+            "name": "💔 DNF at Spa",
             "stage": RaceStage.POST_RACE,
             "result": RaceResult.DNF,
             "circuit": "Spa-Francorchamps",
-            "race": "Belgian Grand Prix"
+            "race": "Belgian Grand Prix",
+            "context": "loss"  # Changed from disappointing
         }
     ]
     
     for scenario in scenarios:
-        print(f"📍 {scenario['name']}")
-        print("-" * 50)
+        print(f"\n📍 {scenario['name']}")
+        print("-" * 30)
         
         # Update context
         agent.update_context(
@@ -1037,31 +1251,16 @@ if __name__ == "__main__":
             position=scenario.get("position")
         )
         
-        # Demonstrate NLP-enhanced outputs
-        print("🗣️  Status Post:", agent.speak())
-        print("💭 NLP Thoughts:", agent.think())
+        # Generate content
+        post = agent.speak(scenario["context"])
+        print(f"📱 Generated: {post}")
         
-        # Demonstrate advanced reply analysis
-        test_comment = "Amazing driving today! Keep pushing!"
-        print(f"💬 Analyzing comment: '{test_comment}'")
-        sentiment = agent.nlp_processor.analyze_sentiment(test_comment)
-        print(f"   Sentiment: {sentiment['compound']:.2f} (pos: {sentiment['pos']:.2f})")
-        print("📤 Reply:", agent.reply_to_comment(test_comment))
+        # Test reply
+        reply = agent.reply_to_comment("Great job today!")
+        print(f"💬 Reply: {reply}")
         
-        print("📢 Mention:", agent.mention_teammate_or_competitor("Carlos Speed", "teammate"))
         print()
-        
-        # Show NLP insights
-        info = agent.get_agent_info()
-        if "recent_sentiment_compound" in info:
-            print(f"🔬 NLP Insights - Recent sentiment: {info['recent_sentiment_compound']}")
-        
-        input("Press Enter to continue...")
     
-    print("\n✅ NLP-Enhanced F1 Agent Demo Complete!")
-    print("🔬 Features demonstrated:")
-    print("  - NLTK sentiment analysis")
-    print("  - spaCy entity recognition") 
-    print("  - Transformer-based text generation")
-    print("  - Advanced contextual awareness")
-    print("  - Linguistic analysis and enhancement")
+    print("✅ Content Generation Test Complete!")
+    print("\n💡 To debug specific issues, call agent.debug_generation(context_type)")
+    print("🔧 All templates now use reliable substitution and validation")

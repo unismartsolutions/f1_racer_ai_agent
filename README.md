@@ -76,11 +76,14 @@ pip install -r requirements.txt
    "
    ```
 
-3. **Run the agent**:
+3. **Run the agent** (includes mandatory setup):
 ```bash
-python run_agent.py  # Interactive mode
+python run_agent.py  # Interactive mode with guided setup
 python f1_agent.py   # Demo with NLP features
+python demo_setup.py # Demonstration of setup flow
 ```
+
+**Note**: The interactive mode now includes **mandatory agent and context configuration** before allowing content generation. This ensures all responses are contextually appropriate and emotionally consistent.
 
 ### 🔧 Troubleshooting NLTK Issues
 
@@ -110,17 +113,88 @@ python -m nltk.downloader popular
 
 **Note**: The agent includes comprehensive fallback mechanisms, so it will work even if some NLTK resources fail to download, though with reduced NLP capabilities.
 
+### 🚫 Setup Requirements
+
+**Important**: The interactive agent now requires **mandatory setup** before content generation:
+
+- **Agent Configuration**: Driver name and team name are required
+- **Race Context**: Current stage, circuit, and race name must be set
+- **Validation**: Users cannot access main features without completing setup
+
+If you see "❌ Setup is not complete!" messages:
+1. Restart the application: `python run_agent.py`
+2. Complete the guided setup process
+3. Ensure all required fields are filled
+
+**Bypassing Setup** (for development/testing only):
+```python
+# Direct agent usage (skips interface setup validation)
+from f1_agent import F1RacerAgent, RaceStage
+agent = F1RacerAgent("Test Driver", "Test Team")
+agent.update_context(RaceStage.PRACTICE, circuit_name="Test", race_name="Test GP")
+# Now you can generate content
+```
+
 ## 📱 Usage Examples
 
-### Interactive Mode
-The `run_agent.py` script provides a user-friendly interface:
+### Mandatory Setup Flow (New!)
+The agent now requires mandatory configuration before content generation to ensure contextually appropriate responses:
 
 ```
 🏁 Welcome to the F1 Racer AI Agent!
-Enter racer name (default: Alex Driver): Max Lightning
-Enter team name (default: Racing Team): Thunder Racing
+==============================================================
+📋 MANDATORY SETUP - Please configure your agent first
 
-🏎️  F1 Agent Actions:
+🔧 STEP 1: Agent Configuration
+------------------------------
+Enter racer name (e.g., Lewis Hamilton): Max Verstappen
+Enter team name (e.g., Mercedes AMG): Red Bull Racing
+
+✅ Agent created: Max Verstappen from Red Bull Racing
+
+🏎️  STEP 2: Initial Race Context Setup
+------------------------------
+💡 Setting up race context ensures realistic and appropriate responses
+
+🏁 Select current race stage:
+1. Practice Session
+2. Qualifying  
+3. Race Day
+4. Post-Race
+Choose stage (1-4): 4
+
+Enter circuit name (e.g., Monaco, Silverstone): Monaco
+Enter race name (e.g., Monaco Grand Prix): Monaco Grand Prix
+
+📊 What was the result of the recent race?
+1. Victory (P1)
+2. Podium (P2-P3)
+3. Points finish (P4-P10)
+4. Did Not Finish (DNF)
+5. Crash/Accident
+6. Poor result but finished
+Choose result (or press Enter to skip): 1
+
+Enter finishing position for Victory (P1): 1
+
+✅ Context configured: Post-Race at Monaco
+📊 Recent result: Win (P1)
+
+==============================================================
+✅ SETUP COMPLETE! Your F1 Agent is ready for action!
+👤 Driver: Max Verstappen
+🏁 Team: Red Bull Racing
+📍 Current Context: Post-Race at Monaco
+==============================================================
+```
+
+### Interactive Mode
+Once setup is complete, the main menu becomes available:
+
+```
+🏎️  F1 Agent Menu - Max Verstappen (Red Bull Racing)
+📍 Current: Post-Race at Monaco
+------------------------------------------------------------
 1. Generate Status Post
 2. Reply to Fan Comment
 3. Mention Teammate/Competitor
@@ -131,10 +205,10 @@ Enter team name (default: Racing Team): Thunder Racing
 ```python
 from f1_agent import F1RacerAgent, RaceStage, RaceResult
 
-# Create agent
+# Create agent with mandatory configuration
 agent = F1RacerAgent("Lewis Hamilton", "Mercedes AMG")
 
-# Update context
+# IMPORTANT: Always set context before generating content
 agent.update_context(
     stage=RaceStage.POST_RACE,
     last_result=RaceResult.WIN,
@@ -143,13 +217,42 @@ agent.update_context(
     race_name="British Grand Prix"
 )
 
-# Generate content
+# Now generate contextually appropriate content
 post = agent.speak("win")
 reply = agent.reply_to_comment("Amazing drive!")
 thoughts = agent.think()
+
+# Example: Change context for different scenarios
+agent.update_context(
+    stage=RaceStage.PRACTICE,
+    session_type=SessionType.FP2,
+    circuit_name="Monaco", 
+    race_name="Monaco Grand Prix"
+)
+
+practice_post = agent.speak("practice")
 ```
 
+### Key Setup Benefits
+- **Contextual Accuracy**: Responses match the actual race situation
+- **Emotional Consistency**: Agent emotions align with race results
+- **Authentic Responses**: Circuit-specific and situation-appropriate content
+- **Validation**: Built-in checks prevent inappropriate emotion-context combinations
+
 ## 🎭 Enhanced Example Outputs
+
+### Mandatory Setup Ensures Context Accuracy
+
+**Before Setup** (Generic Response):
+```
+"Good session today. The team worked hard. Looking forward to tomorrow! #F1"
+```
+
+**After Proper Setup** (Context-Aware Response):
+```
+"YES! What a race! Massive thanks to the team for this incredible car. 
+We gave everything and it paid off! 🏆 #Victory #Winner #MonacoGP #F1"
+```
 
 ### After a Victory (NLP-Enhanced)
 **Input Context**: Win at British Grand Prix, P1  
@@ -166,9 +269,9 @@ phenomenal car. We were extracting pace all race long and it paid off! 🏆
 **NLP Analysis**: Negative sentiment with resilience keywords  
 **Generated Post**:
 ```
-Absolutely gutted. Not the result we wanted today. Gave everything out there, 
-but the tire degradation wasn't quite there. The team will analyze and we'll 
-bounce back stronger next time. Thanks for the support. 💪 #MonacoGP #NeverGiveUp #Resilience
+Gutted. Not the result we wanted today. Gave everything out there, 
+but the balance wasn't quite there. The team will analyze and we'll 
+bounce back stronger next time. Thanks for the support. 💪 #MonacoGP #NeverGiveUp #ComeBackStronger
 ```
 
 ### During Practice Session (Technical Focus)

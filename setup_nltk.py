@@ -30,5 +30,35 @@ try:
     print('✅ pos tagger downloaded')
 except:
     print('⚠️ pos tagger failed')
+    
+try:
+    nltk.download('averaged_perceptron_tagger_eng', quiet=True)
+    print('✅ Newer pos tagger downloaded')
+except:
+    print('⚠️ pos tagger failed')
+    
+try:
+    nltk.download('maxent_ne_chunker', quiet=True)
+    print('✅ Named entity chunker downloaded')
+except:
+    print('⚠️ Named entity chunker failed')
+
+try:
+    nltk.download('words', quiet=True)
+    print('✅ Words corpus downloaded')
+except:
+    print('⚠️ Words corpus failed')
+
+try:
+    nltk.download('brown', quiet=True)
+    print('✅ Brown corpus downloaded')
+except:
+    print('⚠️ Brown corpus failed')
+
+try:
+    nltk.download('wordnet', quiet=True)
+    print('✅ WordNet downloaded')
+except:
+    print('⚠️ WordNet failed')
 
 print('NLTK setup complete!')
