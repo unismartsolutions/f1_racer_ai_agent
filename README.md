@@ -757,4 +757,7 @@ For this I have developed another repo named "f1_racer_ai_agent_advanced" - http
 
 I hope that you find this additional/alternate approach useful as this demonstrates how we could leverage the power of emerging LLMs to create mope powerful, relevant and creative content via the F1 Agent. 
 
+App link: https://f1-racer-agent-app.azurewebsites.net/
+Login Details: Provided through consultant
+
 Please feel free to reach out if you have any questions.
