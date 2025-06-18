@@ -162,7 +162,7 @@ class F1RacerAgent:
             stage=RaceStage.PRACTICE,
             session_type=SessionType.FP1,
             circuit_name="Circuit",
-            race_name="Grand Prix",
+            race_name="German Grand Prix",
             last_result=None,
             position=None,
             team_name=team_name,
