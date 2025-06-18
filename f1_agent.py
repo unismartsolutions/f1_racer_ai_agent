@@ -19,8 +19,6 @@ import torch
 from textblob import TextBlob
 import numpy as np
 
-# Human-like comments for each Enum class and its members
-
 class RaceStage(Enum):
     """Represents the main stages of a Formula 1 race weekend."""
     PRACTICE = "practice"        # Practice sessions where teams test setups and gather data
