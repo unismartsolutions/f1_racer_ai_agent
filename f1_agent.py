@@ -155,7 +155,7 @@ class F1RacerAgent:
     AI Agent that simulates a Formula 1 racer's persona with reliable text generation
     """
     
-    def __init__(self, racer_name: str = "Alex Driver", team_name: str = "Racing Team"):
+    def __init__(self, racer_name: str = "Lightening McQueen", team_name: str = "Rusteez"):
         self.racer_name = racer_name
         self.team_name = team_name
         self.context = RaceContext(
